@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.address.book.Address.Book.Web.Application.DAO.ContactRepo;
 import com.address.book.Address.Book.Web.Application.DAO.PersonRepo;
@@ -20,6 +21,7 @@ import com.address.book.Address.Book.Web.Application.Entity.Person;
 import com.address.book.Address.Book.Web.Application.Response.CustomResponseCodes;
 import com.address.book.Address.Book.Web.Application.Response.CustomResponseStatus;
 import com.address.book.Address.Book.Web.Application.Response.JSONCustomResponse;
+import com.address.book.Address.Book.Web.Application.Service.FilesStorageService;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -32,6 +34,9 @@ public class ContactController {
 	
 	@Autowired
 	private ContactRepo contact_repo;
+	
+	@Autowired
+	FilesStorageService storageService;
 	
 	@RequestMapping(value = "/contact", method = RequestMethod.POST)
 	public JSONCustomResponse postPerson(@RequestBody Contact contact, @RequestParam int person_id) {
@@ -101,12 +106,12 @@ public class ContactController {
 	}
 	
 	@RequestMapping(value = "/contacts", method = RequestMethod.GET)
-	public JSONCustomResponse getContactsByPersonID(@RequestParam int person_id) {
+	public JSONCustomResponse getContactsByPersonID(@RequestParam int person_id, @RequestParam int page) {
 		List<Contact> l = new ArrayList<Contact>();
 		JSONCustomResponse jsonResponse = new JSONCustomResponse();
 		try {
 			System.out.println(person_id);
-			ArrayList<Contact> contacts = contact_repo.findByPersonID(person_id).get();
+			ArrayList<Contact> contacts = contact_repo.findByPersonID(person_id, page*10).get();
 			l.addAll(contacts);
 			jsonResponse.getData().put("contact", l);
 			jsonResponse.setStatus(CustomResponseStatus.SUCCESS);
@@ -120,5 +125,27 @@ public class ContactController {
 		}
 		return jsonResponse;
 	}
-	
+
+	@RequestMapping(value = "/contact/upload", method = RequestMethod.POST)
+	public JSONCustomResponse uploadFile(@RequestParam("file") MultipartFile file, @RequestParam int person_id) {
+		String message = "";
+		JSONCustomResponse jsonResponse = new JSONCustomResponse();
+		Contact contact_db = contact_repo.findById(person_id).get();
+		try {
+			storageService.save(file,person_id);
+			contact_db.setImage("C:/AddressBook/uploads/"+person_id+"/"+file.getOriginalFilename());
+			contact_repo.save(contact_db);
+			message = "Uploaded the file successfully: " + file.getOriginalFilename();
+			jsonResponse.setStatus(CustomResponseStatus.SUCCESS);
+			jsonResponse.setCode(CustomResponseCodes.created);
+			jsonResponse.setMessage(message);
+		} catch (Exception e) {
+			message = "Could not upload the file: " + file.getOriginalFilename() + "!";
+			jsonResponse.setStatus(CustomResponseStatus.FAILURE);
+			jsonResponse.setCode(CustomResponseCodes.internal_server_eror);
+			jsonResponse.setMessage(message);
+            System.out.println(e.toString());
+		}
+		return jsonResponse;
+	}
 }
