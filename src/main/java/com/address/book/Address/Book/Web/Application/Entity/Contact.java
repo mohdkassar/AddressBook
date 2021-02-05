@@ -28,6 +28,7 @@ public class Contact implements CustomResponseDTO {
 	private String image;
 	private String nationality;
 	private String phone;
+	private String relationship;
 	private String address;
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "person_id", nullable = true)

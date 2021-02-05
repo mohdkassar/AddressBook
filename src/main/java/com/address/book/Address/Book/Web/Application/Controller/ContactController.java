@@ -2,6 +2,7 @@ package com.address.book.Address.Book.Web.Application.Controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -73,6 +74,7 @@ public class ContactController {
 		contact_db.setNationality(contact.getNationality());
 		contact_db.setPhone(contact.getPhone());
 		contact_db.setJobtitle(contact.getJobtitle());
+		contact_db.setRelationship(contact.getRelationship());
 		contact_repo.save(contact_db);
 		jsonResponse.setStatus(CustomResponseStatus.SUCCESS);
 		jsonResponse.setCode(CustomResponseCodes.created);
@@ -106,12 +108,26 @@ public class ContactController {
 	}
 	
 	@RequestMapping(value = "/contacts", method = RequestMethod.GET)
-	public JSONCustomResponse getContactsByPersonID(@RequestParam int person_id, @RequestParam int page) {
+	public JSONCustomResponse getContactsByPersonID(@RequestParam int person_id, @RequestParam int page, @RequestParam Optional<String> jobtitle, @RequestParam Optional<String> nationality) {
 		List<Contact> l = new ArrayList<Contact>();
 		JSONCustomResponse jsonResponse = new JSONCustomResponse();
 		try {
 			System.out.println(person_id);
-			ArrayList<Contact> contacts = contact_repo.findByPersonID(person_id, page*10).get();
+			ArrayList<Contact> contacts;
+			if(jobtitle.isPresent() && nationality.isPresent()){
+				contacts = contact_repo.filterByNationalityAndTitle(person_id, page*10, nationality.get(), jobtitle.get()).get();	
+
+			}
+			else if(jobtitle.isPresent()) {
+				contacts = contact_repo.filterByTitle(person_id, page*10, jobtitle.get()).get();	
+			}
+			else if(nationality.isPresent()) {
+				contacts = contact_repo.filterByNationality(person_id, page*10, nationality.get()).get();	
+
+			}
+			else {
+				contacts = contact_repo.findByPersonID(person_id, page*10).get();
+			}
 			l.addAll(contacts);
 			jsonResponse.getData().put("contact", l);
 			jsonResponse.setStatus(CustomResponseStatus.SUCCESS);
