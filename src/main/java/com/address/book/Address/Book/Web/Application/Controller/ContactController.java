@@ -119,7 +119,8 @@ public class ContactController {
 
 			}
 			else if(jobtitle.isPresent()) {
-				contacts = contact_repo.filterByTitle(person_id, page*10, jobtitle.get()).get();	
+				System.out.println("Job title is present");
+				contacts = contact_repo.filterByTitle(person_id, page*10, ""+jobtitle.get()+"").get();	
 			}
 			else if(nationality.isPresent()) {
 				contacts = contact_repo.filterByNationality(person_id, page*10, nationality.get()).get();	
